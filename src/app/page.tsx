@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from 'next/navigation'
 
 const App = () => {
-  const [title, setTitle] = useState("");
+
+  const [title, setTitle] = useState<string | null>("");
   const [welcome, setWelcome] = useState("");
   const router = useRouter();
 
@@ -34,17 +35,19 @@ const App = () => {
 
 
  return (
-        <div className="all">
+        <div>
             <h1>Marutsuke TOP</h1>
             <div>
                 <p>{welcome}</p>
-                <input type="text" onChange={(e) => { setTitle(e.target.value) }} />
+                
+                {/* <input type="text" onChange={(e) => { setTitle(e.target.value) }} /> */}
                 <br />
-                <button className="start-button" type="submit" onClick={() => handleStartButtonClick(1)}>回答の記入からスタート</button>
-                <button className="start-button" type="submit" onClick={() => handleStartButtonClick(2)}>答えの記入からスタート</button>
+                <button type="submit" onClick={() => handleStartButtonClick(1)}>回答の記入からスタート</button>
+                <br />
+                <button type="submit" onClick={() => handleStartButtonClick(2)}>答えの記入からスタート</button>
             </div>
             <br /><br /><br />
-            <button className="start-button" type="submit" onClick={() => router.push("/usercreate")}>ユーザー登録はこちら</button>
+            <button type="submit" onClick={() => router.push("/usercreate")}>ユーザー登録はこちら</button>
         </div>
     );
 };

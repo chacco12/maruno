@@ -2,21 +2,21 @@
 import React from 'react'
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation'
-import { answer } from '@prisma/client';
-
 
 const Result = () => {
 
-  const [user_id, setUserId] = useState<string>();
-  const [input, setInput] = useState<number[]>([]);
+
+  const [user_id, setUserId] = useState<string | null>(localStorage.getItem("user_id"));
+  const [myAnswer, setMyAnswer] = useState<number[]>([]);
   const [count, setCount] = useState<number>(1);
+  const [date, setDate] = useState<string>("");
   const router = useRouter();
-  const title = localStorage.getItem("title")
+  // const title = localStorage.getItem("title")
 
   const addAnswer = (x: number) => {
-    setInput([...input, x]);
+    setMyAnswer([...myAnswer, x]);
 
-    if (input.length > 10) {
+    if (myAnswer.length > 10) {
       const tableElment: HTMLTableElement = document.getElementById('tt') as HTMLTableElement;
       tableElment.scrollIntoView(false);
     }
@@ -25,77 +25,66 @@ const Result = () => {
 
   const finish = async () => {
     //ローカルストレージにSET
-    localStorage.setItem("input", JSON.stringify(input))
-
-    //ログインユーザー
-    if (user_id) {
-      try {
-        console.log(">>>newするよ")
-        const res = await fetch("../api/answer", {
-          method: "POST",
-          headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            user_id: user_id,
-            title: title,
-            input: input,
-            answer: null,
-            result: null,
-            status: 0,
-          })
-        })
-        const jsonResponse = await res.json();
-
-        router.push("/marutsuke/")
-      } catch (err) {
-        alert("失敗")
-      }
-    }
-    //ゲストユーザー
+    localStorage.setItem("myAnswer", JSON.stringify(myAnswer))
     router.push("/marutsuke/")
   }
-  
+
   useEffect(() => {
     const id = localStorage.getItem("user_id");
     if (id) {
-        setUserId(id);
+      setUserId(id);
     }
-}, []); // 空の依存リストで初回レンダリング時にのみ実行
+    const today: Date = new Date();
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      timeZoneName: 'short'
+    };
+
+    const formattedDate: string = new Intl.DateTimeFormat('ja-JP', options).format(today);
+    setDate(formattedDate)
+
+  }, []); // 空の依存リストで初回レンダリング時にのみ実行
 
   return (
-    <div className="all">
+    <div>
       <h1>MARUTSUKE App</h1>
       <br />
-      <p>{title}</p>
-        <br /><br /><br />
-        <div className="input-list">
-          <table id="tt">
-            <tbody>
-              {input.map((input, index) => {
-                return <tr key={index}>
-                  <td>( {index + 1} ) </td><td>{input}</td>
-                </tr>;
-              })}
-            </tbody>
-          </table>
-        </div>
-        <div>問{count}</div>
-
-        <br />
-          <button className="finish-button" onClick={()=>addAnswer(1)}>1</button>
-          <button className="finish-button" onClick={()=>addAnswer(2)}>2</button>
-          <br />
-          <button className="finish-button" onClick={()=>addAnswer(3)}>3</button>
-          <button className="finish-button" onClick={()=>addAnswer(4)}>4</button>
-        <div>
-
-          <button className="finish-button" onClick={finish}>終了</button>
-        </div>
-
+      <br />
+      <p>開始時間：{date}</p>
+      <br /><br />
+      <div className="input-list">
+        <table id="tt">
+          <tbody>
+            {myAnswer.map((myAnswer, index) => {
+              return <tr key={index}>
+                <td>( {index + 1} ) </td><td>{myAnswer}</td>
+              </tr>;
+            })}
+          </tbody>
+        </table>
       </div>
-    
+      <div>問{count}</div>
+
+      <div className="answer-button-container">
+        {[1, 2, 3, 4].map(num => (
+          <button className="answer-button" key={num} onClick={() => addAnswer(num)}>
+            {num}
+          </button>
+        ))}
+      </div>
+      <br />
+      <br />
+      <div>
+        <button onClick={finish}>終了</button>
+      </div>
+
+    </div>
+
   );
 };
 

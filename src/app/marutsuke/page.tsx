@@ -1,123 +1,111 @@
 'use client';
 
+import React, { useState, useEffect, ChangeEvent } from "react";
+import { usePathname, useSearchParams, useRouter } from 'next/navigation'
 
-import { useState, useEffect } from "react";
-import { useRouter } from 'next/navigation'
 
 const Maru = () => {
-  const input = localStorage.getItem("input")
-  // const answer_id = params.answer_id
-  const [title, setTitle] = useState<string>("");
-
-  const [answer, setAnswer] = useState<number[]>([]);
-  const [count, setCount] = useState<number>(1);
-
+  const myAnswer = localStorage.getItem("myAnswer");
+  const [tableData, setTableData] = useState<string[][]>([]);
+  const [thirdColumnData, setThirdColumnData] = useState<string[]>([]);
+  const [count, setCount] = useState<number>(0);
   const router = useRouter();
-  const [result, setResult] = useState<number[]>([]);
-  const [result_mark, setResult_mark] = useState<string[]>([]);
-
-  const getAnswer = async () => {
-    console.log(">>>GETにfetchするよ")
-    try {
-      const res = await fetch("../api/answer")
-
-      console.log(">>>GETにfetchしたよ")
-
-      const data = await res.json();
-      setTitle(data.title)
-      setInput(data.input)
-    } catch (err) {
-      alert("getAnswer()失敗")
-    }
-  }
 
 
 
+  const handleThirdColumnChange = (value: string, index: number) => {
+    const updatedData: string[] = [...thirdColumnData];
+    updatedData[index] = value;
+    setThirdColumnData(updatedData);
+  };
 
-  const addResult = (x: number) => {
-    setResult([...result, x]);
-    if (x == 0) {
-      setResult_mark([...result_mark, "〇"]);
-    }
-    if (x == 1) {
-      setResult_mark([...result_mark, "×"]);
-    }
+  const handleButtonClick = (value: string) => {
+    console.log("Button Clicked:", value);
+    // 以下の更新処理
+    if (count < tableData.length) {
+      const updatedData: string[][] = tableData.map((row, rowIndex) =>
+        rowIndex === count ? [...row.slice(0, 2), value] : row
+      );
+      setTableData(updatedData);
 
+      const updatedThirdColumnData: string[] = [...thirdColumnData];
+      updatedThirdColumnData[count] = value;
+      setThirdColumnData(updatedThirdColumnData);
 
-    if (result.length > 10) {
-      const tableElment: HTMLTableElement = document.getElementById('tt') as HTMLTableElement;
-      tableElment.scrollIntoView(false);
+      setCount(count + 1); // 次の問題へ移動
     }
   };
 
-  const finish = async () => {
-    try {
-      console.log(">>>PUTするよ")
-      const res = await fetch("../api/answer", {
-        method: "PUT",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          answer_id: answer_id,
-          input: input,
-          answer: null,
-          result: result,
-          step: 1,
-        })
-      })
-      const jsonResponse = await res.json();
-
-      router.push(`/result/${jsonResponse.answer_id}`)
-    } catch (err) {
-      alert("失敗")
-    }
-  }
-
-
+  const finish = () => {
+    localStorage.setItem("result", JSON.stringify(tableData));
+    // const pathname = "/result"
+    // const searchParams = tableData
+    // const url = `${pathname}?${searchParams}`
+    router.push("/result")
+  };
+  
 
   useEffect(() => {
-    getAnswer()
-  }, [])
-
+    if (myAnswer !== null) {
+      const parsedAnswer: string[] = JSON.parse(myAnswer);
+      const initialTableData: string[][] = parsedAnswer.map((answer, index) => [
+        `問${index + 1}`, // 問題番号は1から始める
+        answer,
+        ""
+      ]);
+      setTableData(initialTableData);
+      setThirdColumnData(new Array(parsedAnswer.length).fill(""));
+    }
+  }, [myAnswer]);
 
   return (
-
-    <div className="all">
+    <div>
       <h1>MARUTSUKE App</h1>
-      <div>
-        <p>{title}</p>
-        <br /><br /><br />
-        <div className="data">
-          <table id="tt">
-            <tbody>
-              {result_mark.map((result_mark, index) => {
-                return <tr key={index}>
-                  <td>( {index + 1} ) </td><td>{input[index]}</td><td>{result_mark}</td>
-                </tr>;
-              })}
-            </tbody>
-          </table>
-        </div>
+      <br /><br /><br />
+      <table id="tt">
+        <thead>
+          <tr>
+            <th>問題番号</th>
+            <th>自分の回答</th>
+            <th>正誤</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tableData.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              {row.map((cell, colIndex) => (
+                <td key={colIndex}>
+                  {colIndex === 0 || colIndex === 1 ? (
+                    <span>{cell}</span>
+                  ) : (
+                    <input
+                      type="text"
+                      value={thirdColumnData[rowIndex] || ""}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        handleThirdColumnChange(e.target.value, rowIndex)
+                      }
+                    />
+                  )}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
+      <br />
+      <div className="cl">
         <br />
-        <div className="cl">
-          <br />
-          <br />
-          <br />
-          <button className="button" type="button" onClick={() => addResult(0)}>○</button>
-          <button className="button" type="button" onClick={() => addResult(1)}>×</button>
-
-          <br />
-          <br />
-          <button className="finish-button" onClick={finish}>終了</button>
+        <div className="answer-button-container">
+          <button className="answer-button" onClick={() => handleButtonClick("〇")}>〇</button>
+          <button className="answer-button" onClick={() => handleButtonClick("×")}>×</button>
         </div>
-
+        <br />
+        <br />
+        <button onClick={finish}>終了</button>
       </div>
     </div>
-
-  )
-}
+  );
+};
 
 export default Maru;
